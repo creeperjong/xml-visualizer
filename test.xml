@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<personalInfo>
+    <name>John Doe</name>
+    <age>30</age>
+    <email>john.doe@example.com</email>
+    <address>
+        <street>123 Main Street</street>
+        <city>New York</city>
+        <state>NY</state>
+        <zip>10001</zip>
+    </address>
+    <phoneNumbers>
+        <phoneNumber type="home">555-1234</phoneNumber>
+        <phoneNumber type="work">555-5678</phoneNumber>
+    </phoneNumbers>
+</personalInfo>
