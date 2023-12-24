@@ -11,7 +11,7 @@ export function initSvg() {
 }
 
 function drawLegend(svg) {
-  const types = ["Node", "Text", "Attribute"];
+  const types = ["Element node", "Text node", "Attribute node"];
   const legends = types.concat(["Seleted node", "Root node"]);
   const color = d3.scaleOrdinal(types, d3.schemeSet1);
 
