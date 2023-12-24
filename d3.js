@@ -1,12 +1,61 @@
+var typeColor = () => {};
+
 export function initSvg() {
-  d3.select("#chart-area")
+  const svg = d3
+    .select("#chart-area")
     .append("svg")
     .attr("width", "50vw")
     .attr("height", "100vh");
+
+  drawLegend(svg);
+}
+
+function drawLegend(svg) {
+  const types = ["Node", "Text", "Attribute"];
+  const legends = types.concat(["Seleted node", "Root node"]);
+  const color = d3.scaleOrdinal(types, d3.schemeSet1);
+
+  const legend = svg
+    .append("g")
+    .attr("id", "legend-area")
+    .attr("transform", "translate(20, 20)")
+    .attr("width", "150px")
+    .attr("height", "200px");
+
+  legend
+    .selectAll("rect")
+    .data(legends)
+    .enter()
+    .append("rect")
+    .attr("width", "20px")
+    .attr("height", "20px")
+    .attr("transform", (d, i) => `translate(0, ${i * 30})`)
+    .style("fill", (d) => {
+      if (d === "Seleted node") {
+        return "yellow";
+      }
+      if (d === "Root node") {
+        return "#FF00FF";
+      }
+      return color(d);
+    });
+  legend
+    .selectAll("text")
+    .data(legends)
+    .enter()
+    .append("text")
+    .attr("x", "30px")
+    .attr("y", "15px")
+    .attr("transform", (d, i) => `translate(0, ${i * 30})`)
+    .text((d) => d)
+    .attr("text-anchor", "left")
+    .style("fill", "white");
 }
 
 export function clearSvg() {
-  d3.select("svg").selectAll("*").remove();
+  const svg = d3.select("svg");
+  svg.selectAll("*").remove();
+  drawLegend(svg);
 }
 
 export function drawTree(tree) {
@@ -35,7 +84,7 @@ export function drawTree(tree) {
   const types = ["node", "text", "attr"];
   const links = data.links.map((d) => Object.create(d));
   const nodes = data.nodes.map((d) => Object.create(d));
-  const typeColor = d3.scaleOrdinal(types, d3.schemeSet1);
+  typeColor = d3.scaleOrdinal(types, d3.schemeSet1);
 
   const simulation = d3
     .forceSimulation(nodes)
@@ -129,7 +178,6 @@ const linkArc = (d) =>
   `M${d.source.x},${d.source.y}A0,0 0 0,1 ${d.target.x},${d.target.y}`;
 
 const drag = (simulation) => {
-  var tmpColor = "";
   function dragstarted(event, d) {
     if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = d.x;
@@ -142,7 +190,6 @@ const drag = (simulation) => {
     const links = d3.selectAll(`.link-${id}`);
     d.fx = event.x;
     d.fy = event.y;
-    if (tmpColor == "") tmpColor = node.attr("stroke");
     node.attr("stroke", "yellow");
     links
       .attr("stroke", "yellow")
@@ -156,13 +203,15 @@ const drag = (simulation) => {
     if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
-    if (tmpColor != "") {
-      node.attr("stroke", tmpColor);
-      links
-        .attr("stroke", tmpColor)
-        .attr("marker-end", (d) => `url(#arrow-${d.type})`);
-    }
-    tmpColor = "";
+    node.attr("stroke", (d) => {
+      if (d.id === 0) {
+        return "#FF00FF";
+      }
+      return typeColor(d.type);
+    });
+    links
+      .attr("stroke", (d) => typeColor(d.type))
+      .attr("marker-end", (d) => `url(#arrow-${d.type})`);
   }
 
   return d3
