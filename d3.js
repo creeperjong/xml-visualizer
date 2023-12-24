@@ -55,7 +55,7 @@ export function drawTree(tree) {
   svg
     .append("defs")
     .selectAll("marker")
-    .data(types)
+    .data(types.concat(["node-selected", "text-selected", "attr-selected"]))
     .join("marker")
     .attr("id", (d) => `arrow-${d}`)
     .attr("viewBox", "0 0 7.5 7.5")
@@ -66,13 +66,19 @@ export function drawTree(tree) {
     .attr("orient", "auto")
     .append("path")
     .attr("d", "M 0 0 L 5 2.5 L 0 5 z")
-    .attr("fill", (d) => typeColor(d));
+    .attr("fill", (d) => {
+      if (d.includes("selected")) {
+        return "yellow";
+      }
+      return typeColor(d);
+    });
 
   const link = svg
     .append("g")
     .selectAll("path")
     .data(links)
     .join("path")
+    .attr("class", (d) => `link-${d.source.id}`)
     .attr("stroke", (d) => typeColor(d.type))
     .attr("stroke-width", 3)
     .attr("marker-end", (d) => `url(#arrow-${d.type})`);
@@ -86,6 +92,7 @@ export function drawTree(tree) {
 
   node
     .append("circle")
+    .attr("id", (d) => `node-${d.id}`)
     .attr("stroke", (d) => {
       if (d.id === 0) {
         return "#FF00FF";
@@ -122,6 +129,7 @@ const linkArc = (d) =>
   `M${d.source.x},${d.source.y}A0,0 0 0,1 ${d.target.x},${d.target.y}`;
 
 const drag = (simulation) => {
+  var tmpColor = "";
   function dragstarted(event, d) {
     if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = d.x;
@@ -129,14 +137,32 @@ const drag = (simulation) => {
   }
 
   function dragged(event, d) {
+    const id = d.id;
+    const node = d3.select(`#node-${id}`);
+    const links = d3.selectAll(`.link-${id}`);
     d.fx = event.x;
     d.fy = event.y;
+    if (tmpColor == "") tmpColor = node.attr("stroke");
+    node.attr("stroke", "yellow");
+    links
+      .attr("stroke", "yellow")
+      .attr("marker-end", (d) => `url(#arrow-${d.type}-selected)`);
   }
 
   function dragended(event, d) {
+    const id = d.id;
+    const node = d3.select(`#node-${id}`);
+    const links = d3.selectAll(`.link-${id}`);
     if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
+    if (tmpColor != "") {
+      node.attr("stroke", tmpColor);
+      links
+        .attr("stroke", tmpColor)
+        .attr("marker-end", (d) => `url(#arrow-${d.type})`);
+    }
+    tmpColor = "";
   }
 
   return d3
