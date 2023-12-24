@@ -74,4 +74,4 @@ document.getElementById("xml-input").addEventListener("blur", function (event) {
   drawTree(tree);
 });
 
-// TODO: 縮放拖移功能、legend、deployment
+// TODO: 縮放拖移功能、legend

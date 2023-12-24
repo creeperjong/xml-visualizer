@@ -1,12 +1,61 @@
+var typeColor = () => {};
+
 export function initSvg() {
-  d3.select("#chart-area")
+  const svg = d3
+    .select("#chart-area")
     .append("svg")
     .attr("width", "50vw")
     .attr("height", "100vh");
+
+  drawLegend(svg);
+}
+
+function drawLegend(svg) {
+  const types = ["Element node", "Text node", "Attribute node"];
+  const legends = types.concat(["Seleted node", "Root node"]);
+  const color = d3.scaleOrdinal(types, d3.schemeSet1);
+
+  const legend = svg
+    .append("g")
+    .attr("id", "legend-area")
+    .attr("transform", "translate(20, 20)")
+    .attr("width", "150px")
+    .attr("height", "200px");
+
+  legend
+    .selectAll("rect")
+    .data(legends)
+    .enter()
+    .append("rect")
+    .attr("width", "20px")
+    .attr("height", "20px")
+    .attr("transform", (d, i) => `translate(0, ${i * 30})`)
+    .style("fill", (d) => {
+      if (d === "Seleted node") {
+        return "yellow";
+      }
+      if (d === "Root node") {
+        return "#FF00FF";
+      }
+      return color(d);
+    });
+  legend
+    .selectAll("text")
+    .data(legends)
+    .enter()
+    .append("text")
+    .attr("x", "30px")
+    .attr("y", "15px")
+    .attr("transform", (d, i) => `translate(0, ${i * 30})`)
+    .text((d) => d)
+    .attr("text-anchor", "left")
+    .style("fill", "white");
 }
 
 export function clearSvg() {
-  d3.select("svg").selectAll("*").remove();
+  const svg = d3.select("svg");
+  svg.selectAll("*").remove();
+  drawLegend(svg);
 }
 
 export function drawTree(tree) {
@@ -35,7 +84,7 @@ export function drawTree(tree) {
   const types = ["node", "text", "attr"];
   const links = data.links.map((d) => Object.create(d));
   const nodes = data.nodes.map((d) => Object.create(d));
-  const typeColor = d3.scaleOrdinal(types, d3.schemeSet1);
+  typeColor = d3.scaleOrdinal(types, d3.schemeSet1);
 
   const simulation = d3
     .forceSimulation(nodes)
@@ -55,7 +104,7 @@ export function drawTree(tree) {
   svg
     .append("defs")
     .selectAll("marker")
-    .data(types)
+    .data(types.concat(["node-selected", "text-selected", "attr-selected"]))
     .join("marker")
     .attr("id", (d) => `arrow-${d}`)
     .attr("viewBox", "0 0 7.5 7.5")
@@ -66,13 +115,19 @@ export function drawTree(tree) {
     .attr("orient", "auto")
     .append("path")
     .attr("d", "M 0 0 L 5 2.5 L 0 5 z")
-    .attr("fill", (d) => typeColor(d));
+    .attr("fill", (d) => {
+      if (d.includes("selected")) {
+        return "yellow";
+      }
+      return typeColor(d);
+    });
 
   const link = svg
     .append("g")
     .selectAll("path")
     .data(links)
     .join("path")
+    .attr("class", (d) => `link-${d.source.id}`)
     .attr("stroke", (d) => typeColor(d.type))
     .attr("stroke-width", 3)
     .attr("marker-end", (d) => `url(#arrow-${d.type})`);
@@ -86,6 +141,7 @@ export function drawTree(tree) {
 
   node
     .append("circle")
+    .attr("id", (d) => `node-${d.id}`)
     .attr("stroke", (d) => {
       if (d.id === 0) {
         return "#FF00FF";
@@ -129,14 +185,33 @@ const drag = (simulation) => {
   }
 
   function dragged(event, d) {
+    const id = d.id;
+    const node = d3.select(`#node-${id}`);
+    const links = d3.selectAll(`.link-${id}`);
     d.fx = event.x;
     d.fy = event.y;
+    node.attr("stroke", "yellow");
+    links
+      .attr("stroke", "yellow")
+      .attr("marker-end", (d) => `url(#arrow-${d.type}-selected)`);
   }
 
   function dragended(event, d) {
+    const id = d.id;
+    const node = d3.select(`#node-${id}`);
+    const links = d3.selectAll(`.link-${id}`);
     if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
+    node.attr("stroke", (d) => {
+      if (d.id === 0) {
+        return "#FF00FF";
+      }
+      return typeColor(d.type);
+    });
+    links
+      .attr("stroke", (d) => typeColor(d.type))
+      .attr("marker-end", (d) => `url(#arrow-${d.type})`);
   }
 
   return d3
